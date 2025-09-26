@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="tr" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="5187 Sayılı Basın Kanunu için interaktif ve kullanıcı dostu bir rehber. Avukatlar, gazeteciler ve yayıncılar için güncel yasal sorumlulukları, süreçleri ve 2022 değişikliklerini keşfedin.">
+    <title>5187 Sayılı Basın Kanunu İnteraktif Rehberi</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: Hukuki Nötr Palet -->
+    <!-- Application Structure Plan: Bu uygulama, Basın Kanunu'nu yasal bir metin olmaktan çıkarıp, kullanıcı odaklı bir rehbere dönüştürmeyi amaçlar. Yapı, kanunun madde sırasını takip etmek yerine, bir kullanıcının (gazeteci, avukat, yayıncı) ihtiyaç duyacağı pratik bilgilere göre tematik bölümlere ayrılmıştır: 'Temel Kavramlar', 'Sorumluluk Hukuku', 'Yayıncı Yükümlülükleri', 'Hak Arama Yolları' ve 'Yaptırımlar'. Bu yapı, kullanıcının doğrudan ilgili olduğu konuya hızla ulaşmasını sağlar. İnteraktif öğeler (tıklanabilir kartlar, süreç diyagramları, karşılaştırmalı grafikler), karmaşık yasal süreçleri ve sorumluluk zincirlerini görselleştirerek anlaşılırlığı artırır ve kullanıcının bilgiyle etkileşim kurmasını teşvik eder. Amaç, kanunu pasif bir okuma metni yerine aktif bir öğrenme aracına çevirmektir. -->
+    <!-- Visualization & Content Choices: 
+        - Madde 2 (Tanımlar) -> Hedef: Bilgilendir -> Sunum: İnteraktif Kartlar -> Etkileşim: Tıklandığında tanımı göster/gizle -> Gerekçe: Statik bir liste yerine, terimleri keşfedilebilir hale getirir. Metod: Vanilla JS.
+        - Madde 11 (Cezai Sorumluluk) -> Hedef: Organize Et -> Sunum: HTML/CSS Süreç Diyagramı -> Etkileşim: Vurgulama -> Gerekçe: Karmaşık sorumluluk zincirini metinden daha net bir şekilde görselleştirir. Metod: HTML/CSS.
+        - Madde 13 (Hukuki Sorumluluk) -> Hedef: Karşılaştır -> Sunum: Yan Yana Karşılaştırma Kartı -> Etkileşim: Statik -> Gerekçe: Cezai ve hukuki sorumluluk arasındaki farkı netleştirir. Metod: HTML/CSS.
+        - Madde 14 (Tekzip Süreci) -> Hedef: Süreci Göster -> Sunum: Adım Adım Zaman Çizelgesi -> Etkileşim: Her adımda bilgi gösterimi -> Gerekçe: Kullanıcıyı yasal süreç boyunca kronolojik olarak yönlendirir. Metod: HTML/CSS.
+        - Madde 26 (Dava Süreleri) -> Hedef: Karşılaştır -> Sunum: Çubuk Grafik -> Etkileşim: Fareyle üzerine gelince detay göster (tooltip) -> Gerekçe: İnternet siteleri için daha kısa olan kritik dava açma süresini anında görsel olarak vurgular. Metod: Chart.js (Canvas).
+        - CONFIRMATION: NO SVG graphics used. NO Mermaid JS used.
+    -->
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8f9fa; 
+        }
+        .nav-link {
+            transition: color 0.3s, border-bottom-color 0.3s;
+        }
+        .nav-link:hover, .nav-link.active {
+            color: #2563eb;
+            border-bottom-color: #2563eb;
+        }
+        .card {
+            background-color: #ffffff;
+            border-radius: 0.75rem;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 300px;
+            max-height: 400px;
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 350px;
+            }
+        }
+        .step-connector {
+            flex-grow: 1;
+            height: 2px;
+            background-color: #cbd5e1;
+        }
+         .step-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            width: 120px;
+        }
+        .step-circle {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: white;
+            background-color: #3b82f6;
+            border: 4px solid #ffffff;
+            box-shadow: 0 0 0 2px #3b82f6;
+        }
+    </style>
+</head>
+<body class="text-gray-800">
+
+    <header class="bg-white/80 backdrop-blur-lg sticky top-0 z-50 shadow-sm">
+        <nav class="container mx-auto px-6 py-4">
+            <div class="flex items-center justify-between">
+                <div class="text-2xl font-bold text-gray-800">Basın Kanunu Rehberi</div>
+                <div class="relative flex-grow max-w-md mx-8 hidden md:block">
+                    <input type="text" id="searchInput" placeholder="Rehberde ara (örn: tekzip, sorumluluk)..." class="w-full px-4 py-2 text-gray-700 bg-gray-100 border border-transparent rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all">
+                    <svg class="w-5 h-5 text-gray-400 absolute top-1/2 right-4 transform -translate-y-1/2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                    </svg>
+                </div>
+                <div class="hidden md:flex items-center space-x-8">
+                    <a href="#kavramlar" class="nav-link border-b-2 border-transparent pb-1">Kavramlar</a>
+                    <a href="#sorumluluk" class="nav-link border-b-2 border-transparent pb-1">Sorumluluk</a>
+                    <a href="#yukumlulukler" class="nav-link border-b-2 border-transparent pb-1">Yükümlülükler</a>
+                    <a href="#hak-arama" class="nav-link border-b-2 border-transparent pb-1">Hak Arama</a>
+                    <a href="#yaptirimlar" class="nav-link border-b-2 border-transparent pb-1">Yaptırımlar</a>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <main class="container mx-auto px-6 py-12">
+        <section id="hero" class="text-center mb-20">
+            <h1 class="text-4xl md:text-5xl font-bold text-blue-600 mb-4">5187 Sayılı Basın Kanunu'nu Keşfedin</h1>
+            <p class="text-lg md:text-xl text-gray-600 max-w-3xl mx-auto">
+                Bu interaktif rehber, 2022 yılında yapılan önemli değişikliklerle güncellenen Basın Kanunu'nun temel ilkelerini, sorumluluklarını ve süreçlerini anlaşılır bir şekilde sunar. Karmaşık yasal metinler yerine, avukatlar, gazeteciler ve yayıncılar için tasarlanmış bu araçla aradığınız bilgiye anında ulaşın. Özellikle internet haber siteleri için getirilen yeni düzenlemeleri kolayca öğrenin.
+            </p>
+        </section>
+
+        <section id="kavramlar" class="mb-20">
+            <h2 class="text-3xl font-bold text-center mb-4">Temel Kavramlar</h2>
+            <p class="text-center text-gray-600 mb-10 max-w-2xl mx-auto">Kanunu doğru yorumlamak için temel tanımları bilmek esastır. Kartlara tıklayarak ilgili kavramın yasal tanımını ve önemini öğrenebilirsiniz.</p>
+            <div id="definitions-grid" class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+            </div>
+        </section>
+
+        <section id="sorumluluk" class="mb-20">
+            <h2 class="text-3xl font-bold text-center mb-10">Sorumluluk Hukuku: Kim, Neden Sorumlu?</h2>
+            <p class="text-center text-gray-600 mb-12 max-w-3xl mx-auto">Basın yoluyla işlenen fiillerde sorumluluk, belirli bir hiyerarşiye göre belirlenir. Bu bölüm, cezai (suç) ve hukuki (tazminat) sorumlulukların kime, hangi koşullarda yüklendiğini görsel olarak açıklamaktadır.</p>
+            <div class="bg-white p-8 rounded-xl shadow-lg">
+                <h3 class="text-2xl font-semibold text-center mb-8">Cezai Sorumluluk Zinciri (Madde 11)</h3>
+                <div class="flex flex-col md:flex-row items-center justify-center space-y-4 md:space-y-0 md:space-x-4">
+                     <div class="flex items-center">
+                        <div class="step-item p-4 bg-blue-100 rounded-lg">
+                            <div class="text-5xl">1</div>
+                            <p class="font-semibold mt-2">Eser Sahibi</p>
+                            <p class="text-sm text-gray-600">(Asıl Sorumlu)</p>
+                        </div>
+                    </div>
+                    <div class="text-4xl text-blue-400 font-light hidden md:block">&rarr;</div>
+                    <div class="text-4xl text-blue-400 font-light block md:hidden">&darr;</div>
+                    <div class="flex items-center">
+                         <div class="step-item p-4 bg-orange-100 rounded-lg">
+                            <div class="text-5xl">2</div>
+                            <p class="font-semibold mt-2">Sorumlu Müdür</p>
+                            <p class="text-sm text-gray-600">(Eser sahibi yargılanamazsa)</p>
+                        </div>
+                    </div>
+                     <div class="text-4xl text-orange-400 font-light hidden md:block">&rarr;</div>
+                     <div class="text-4xl text-orange-400 font-light block md:hidden">&darr;</div>
+                    <div class="flex items-center">
+                         <div class="step-item p-4 bg-red-100 rounded-lg">
+                            <div class="text-5xl">3</div>
+                            <p class="font-semibold mt-2">Yayımlatan</p>
+                            <p class="text-sm text-gray-600">(Sorumlu müdür itiraz ederse)</p>
+                        </div>
+                    </div>
+                </div>
+                 <p class="text-center text-gray-500 mt-8 text-sm">Sorumluluk, ilk halkada sorumlu bulunamazsa veya belirli şartlar oluşursa bir sonraki halkaya geçer.</p>
+            </div>
+             <div class="mt-8 grid md:grid-cols-2 gap-8">
+                <div class="card p-6">
+                    <h4 class="font-bold text-xl mb-3 text-red-700">Hukuki Sorumluluk (Tazminat - Madde 13)</h4>
+                    <p class="text-gray-600">Maddi ve manevi zararlardan doğan tazminat taleplerinde sorumluluk zinciri farklıdır. Burada amaç, zarar görenin mağduriyetini gidermektir.</p>
+                    <ul class="mt-4 space-y-2 list-disc list-inside">
+                        <li><span class="font-semibold">Müşterek ve Müteselsil Sorumluluk</span> esastır.</li>
+                        <li>Süreli yayınlarda: <span class="font-semibold">Eser Sahibi + Yayın Sahibi</span> birlikte sorumludur.</li>
+                        <li>Şirketlerde: <span class="font-semibold">Yönetim Kurulu Başkanı / Üst Yönetici</span> de şirketle birlikte şahsen sorumludur.</li>
+                    </ul>
+                </div>
+                 <div class="card p-6">
+                    <h4 class="font-bold text-xl mb-3 text-blue-700">Haber Kaynağının Gizliliği (Madde 12)</h4>
+                    <p class="text-gray-600">Basın özgürlüğünün en temel güvencelerinden biridir. Bu ilke, gazetecilerin kamuoyunu bilgilendirme görevini serbestçe yapabilmesini sağlar.</p>
+                    <div class="mt-4 bg-blue-50 border-l-4 border-blue-500 text-blue-700 p-4 rounded-r-lg">
+                        <p><span class="font-semibold">Kural:</span> Süreli yayın sahibi, sorumlu müdür ve eser sahibi, haber kaynaklarını açıklamaya ve bu konuda tanıklık yapmaya <span class="font-bold">zorlanamaz.</span></p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="yukumlulukler" class="mb-20">
+            <h2 class="text-3xl font-bold text-center mb-10">Yayıncı Yükümlülükleri</h2>
+            <p class="text-center text-gray-600 mb-10 max-w-2xl mx-auto">Kanun, özellikle internet haber siteleri için şeffaflık ve hesap verebilirlik adına önemli yükümlülükler getirmiştir.</p>
+            <div class="grid md:grid-cols-2 gap-8">
+                <div class="card p-6">
+                    <h3 class="font-bold text-xl mb-3">Zorunlu Bilgiler (Künye - Madde 4)</h3>
+                    <p class="text-gray-600 mb-4">İnternet haber siteleri, "İletişim" başlığı altında şu bilgileri ana sayfadan kolayca erişilebilir şekilde sunmalıdır:</p>
+                    <ul class="space-y-2">
+                        <li class="flex items-center"><span class="text-green-500 mr-2">&#10003;</span> İş yeri adresi ve ticari unvan</li>
+                        <li class="flex items-center"><span class="text-green-500 mr-2">&#10003;</span> E-posta adresi ve iletişim telefonu</li>
+                        <li class="flex items-center"><span class="text-green-500 mr-2">&#10003;</span> Elektronik tebligat adresi</li>
+                        <li class="flex items-center"><span class="text-green-500 mr-2">&#10003;</span> Yer sağlayıcısının adı ve adresi</li>
+                    </ul>
+                </div>
+                <div class="card p-6">
+                    <h3 class="font-bold text-xl mb-3">İçerik Saklama ve Tarih Bildirimi (Madde 4, 10)</h3>
+                    <p class="text-gray-600 mb-4">Delillerin korunması ve şeffaflık için kritik yükümlülükler:</p>
+                    <ul class="space-y-2">
+                        <li class="flex items-start"><span class="text-blue-500 mr-2 font-bold">&#9202;</span> <span class="font-semibold">İçerik Saklama:</span> Yayınlanan içerikler, doğruluğu ve bütünlüğü sağlanmış şekilde **2 yıl süreyle** muhafaza edilmelidir.</li>
+                         <li class="flex items-start"><span class="text-blue-500 mr-2 font-bold">&#128197;</span> <span class="font-semibold">Tarih Bilgisi:</span> İçeriğin ilk yayınlanma ve sonraki güncellenme tarihleri, içeriğin üzerinde belirtilmelidir.</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <section id="hak-arama" class="mb-20">
+            <h2 class="text-3xl font-bold text-center mb-10">Hak Arama Yolları ve Kritik Süreler</h2>
+            <p class="text-center text-gray-600 mb-12 max-w-3xl mx-auto">Kanun, yayınlar nedeniyle zarar gören kişilere belirli haklar tanır ve bu hakların kullanılması için kesin sürelere tabidir. Sürelerin kaçırılması hak kaybına neden olur.</p>
+            
+            <div class="card p-8 mb-12">
+                <h3 class="text-2xl font-semibold text-center mb-8">Düzeltme ve Cevap (Tekzip) Süreci (Madde 14)</h3>
+                <div class="flex flex-col md:flex-row justify-between items-center w-full">
+                    <div class="step-item">
+                        <div class="step-circle">1</div>
+                        <p class="font-semibold mt-2">Başvuru</p>
+                        <p class="text-sm text-gray-600">Yayım tarihinden itibaren **2 ay içinde** gönderilmeli.</p>
+                    </div>
+                    <div class="step-connector mt-4 mb-4 md:mt-0 md:mb-0"></div>
+                    <div class="step-item">
+                        <div class="step-circle">2</div>
+                        <p class="font-semibold mt-2">Yayımlama</p>
+                        <p class="text-sm text-gray-600">İnternet siteleri **1 gün**, gazeteler 3 gün içinde yayımlamalı.</p>
+                    </div>
+                    <div class="step-connector mt-4 mb-4 md:mt-0 md:mb-0"></div>
+                    <div class="step-item">
+                        <div class="step-circle">3</div>
+                        <p class="font-semibold mt-2">Mahkeme</p>
+                        <p class="text-sm text-gray-600">Yayımlanmazsa, **15 gün içinde** Sulh Ceza Hâkimliği'ne başvurulur.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card p-8">
+                 <h3 class="text-2xl font-semibold text-center mb-4">Ceza Davaları İçin Dava Açma Süreleri (Madde 26)</h3>
+                 <p class="text-center text-gray-600 mb-8">Bu süreler hak düşürücüdür ve **MUHAKEME ŞARTIDIR!** Süreler, internet haber siteleri için suçun ihbar edildiği tarihten başlar.</p>
+                 <div class="chart-container">
+                    <canvas id="davaSureleriChart"></canvas>
+                </div>
+            </div>
+        </section>
+        
+        <section id="yaptirimlar" class="mb-20">
+            <h2 class="text-3xl font-bold text-center mb-10">Önemli Suçlar ve Yaptırımlar</h2>
+            <p class="text-center text-gray-600 mb-10 max-w-2xl mx-auto">Kanun, belirli yayın içerikleri ve yükümlülük ihlalleri için para cezaları ve diğer yaptırımları öngörmektedir.</p>
+            <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div class="card p-6 border-l-4 border-red-500">
+                    <h3 class="font-bold text-lg mb-2">Kimliğin Açıklanması (Md. 21)</h3>
+                    <p class="text-sm text-gray-600">Suç mağdurlarının, 18 yaşından küçüklerin veya belirli cinsel suç faillerinin kimliğini açıklayan yayınlar için ağır para cezası uygulanır.</p>
+                </div>
+                <div class="card p-6 border-l-4 border-orange-500">
+                    <h3 class="font-bold text-lg mb-2">Özendirme (Md. 20)</h3>
+                    <p class="text-sm text-gray-600">Cinsel saldırı, cinayet ve intihar olaylarını haber sınırını aşarak okuyucuyu özendirecek şekilde yayımlamak ağır para cezası ile cezalandırılır.</p>
+                </div>
+                <div class="card p-6 border-l-4 border-yellow-500">
+                    <h3 class="font-bold text-lg mb-2">Tekzibin Yayımlanmaması (Md. 18)</h3>
+                    <p class="text-sm text-gray-600">Kesinleşmiş hâkim kararına rağmen düzeltme ve cevabı yayımlamayan sorumlu müdüre ve yetkilisine yüksek miktarda para cezası verilir.</p>
+                </div>
+                 <div class="card p-6 border-l-4 border-purple-500">
+                    <h3 class="font-bold text-lg mb-2">Zorunlu Bilgileri Göstermeme (Md. 15)</h3>
+                    <p class="text-sm text-gray-600">Madde 4'te belirtilen künye bilgilerini eksik veya yanlış gösterenlere para cezası uygulanır.</p>
+                </div>
+                 <div class="card p-6 border-l-4 border-green-500">
+                    <h3 class="font-bold text-lg mb-2">Teslim ve Muhafazaya Uymama (Md. 17)</h3>
+                    <p class="text-sm text-gray-600">Basılı eserleri savcılığa teslim etmeyen basımcı ile içerikleri 2 yıl saklamayan internet sitesi sorumlu müdürüne para cezası verilir.</p>
+                </div>
+                 <div class="card p-6 border-l-4 border-blue-500">
+                    <h3 class="font-bold text-lg mb-2">Yeniden Yayım (Md. 24)</h3>
+                    <p class="text-sm text-gray-600">Kaynak göstermeden veya izinsiz olarak başka bir yayının içeriğini yeniden yayımlamak para cezasını gerektirir.</p>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <footer class="bg-gray-800 text-white text-center p-6">
+        <p>&copy; 2025 İnteraktif Basın Kanunu Rehberi. Bu site yasal danışmanlık hizmeti vermez, yalnızca bilgilendirme amaçlıdır.</p>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const definitions = [
+                { term: 'İnternet Haber Sitesi', definition: 'İnternet ortamında, belirli aralıklarla haber veya yorum niteliğinde yazılı, görsel veya işitsel içeriklerin sunumunu yapmak üzere kurulan ve işletilen süreli yayın. (Md. 2/m)' },
+                { term: 'Süreli Yayın', definition: 'Belli aralıklarla yayımlanan gazete, dergi gibi basılmış eserler ile haber ajansları yayınlarını ve internet haber sitelerini ifade eder. (Md. 2/c)' },
+                { term: 'Eser Sahibi', definition: 'Süreli veya süresiz yayının içeriğini oluşturan yazıyı veya haberi yazanı, çevireni veya resmi ya da karikatürü yapanı, görsel veya işitsel içerikleri kaydeden veya düzenleyeni ifade eder. (Md. 2/ı)' },
+                { term: 'Sorumlu Müdür', definition: 'Her süreli yayının yasal sorumluluğunu taşıyan, kanunda belirtilen şartlara sahip gerçek kişi. (Md. 5)' },
+                { term: 'Yayımcı', definition: 'Bir eseri basılmış eser durumuna getirip yayımlayan gerçek veya tüzel kişi. (Md. 2/j)' },
+                { term: 'Basın Özgürlüğü', definition: 'Bilgi edinme, yayma, eleştirme, yorumlama ve eser yaratma haklarını içerir. Demokratik toplum gerekleriyle sınırlanabilir. (Md. 3)' }
+            ];
+
+            const grid = document.getElementById('definitions-grid');
+            let definitionsHTML = '';
+            definitions.forEach(d => {
+                definitionsHTML += `
+                <div class="card p-6 cursor-pointer">
+                    <h3 class="font-semibold text-xl mb-2 text-blue-600">${d.term}</h3>
+                    <div class="definition text-gray-600 hidden">${d.definition}</div>
+                </div>
+                `;
+            });
+            grid.innerHTML = definitionsHTML;
+
+            // Event Delegation for definition cards
+            grid.addEventListener('click', (event) => {
+                const card = event.target.closest('.card');
+                if (card) {
+                    card.querySelector('.definition').classList.toggle('hidden');
+                }
+            });
+            
+            // Search Functionality
+            const searchInput = document.getElementById('searchInput');
+            const allSearchableElements = document.querySelectorAll('main h1, main h2, main h3, main h4, main p, main li, main .card');
+
+            allSearchableElements.forEach(el => {
+                el.dataset.originalHtml = el.innerHTML;
+            });
+            
+            searchInput.addEventListener('input', () => {
+                const query = searchInput.value.trim();
+
+                allSearchableElements.forEach(el => {
+                    el.innerHTML = el.dataset.originalHtml; // Restore original content
+                });
+
+                if (query.length > 2) {
+                    const regex = new RegExp(query, 'gi');
+                    allSearchableElements.forEach(el => {
+                        // Avoid replacing HTML inside the chart container
+                        if (!el.querySelector('canvas')) {
+                            const newHtml = el.innerHTML.replace(regex, (match) => `<mark class="bg-yellow-200 rounded">${match}</mark>`);
+                            if (newHtml !== el.innerHTML) {
+                                el.innerHTML = newHtml;
+                            }
+                        }
+                    });
+                }
+            });
+            
+            const ctx = document.getElementById('davaSureleriChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['İnternet Haber Siteleri & Günlük Yayınlar', 'Diğer Basılmış Eserler'],
+                    datasets: [{
+                        label: 'Dava Açma Süresi (Ay)',
+                        data: [4, 6],
+                        backgroundColor: [
+                            'rgba(59, 130, 246, 0.7)',
+                            'rgba(249, 115, 22, 0.7)'
+                        ],
+                        borderColor: [
+                            'rgba(59, 130, 246, 1)',
+                            'rgba(249, 115, 22, 1)'
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        title: {
+                            display: true,
+                            text: 'Ceza Davaları İçin Azami Dava Açma Süreleri (Madde 26)',
+                            font: {
+                                size: 16
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return ` Süre: ${context.raw} ay`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Süre (Ay)'
+                            }
+                        }
+                    }
+                }
+            });
+
+            const navLinks = document.querySelectorAll('.nav-link');
+            const sections = document.querySelectorAll('section');
+
+            window.addEventListener('scroll', () => {
+                let current = '';
+                sections.forEach(section => {
+                    const sectionTop = section.offsetTop;
+                    if (pageYOffset >= sectionTop - 100) {
+                        current = section.getAttribute('id');
+                    }
+                });
+                
+                navLinks.forEach(link => {
+                    link.classList.remove('active');
+                    if (link.getAttribute('href').includes(current)) {
+                        link.classList.add('active');
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>
+
+
